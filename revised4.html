@@ -6,6 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>訂單生成器</title>
 <style>
+	body {
+    touch-action: manipulation; /* Restrict touch gestures */
+	}
+
+	input,
+	select,
+	textarea {
+		font-size: 16px; /* Ensures larger tap targets for forms */
+	}
     body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0 10px; }
     .container { max-width: 480px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
     h1 { color: #333; text-align: center; margin-bottom: 20px; }
