@@ -24,6 +24,18 @@
     .clear-btn { background: #E53935; }
     #copyButton { padding: 15px; border: none; width: 100%; }
     #summary { text-align: center; margin-top: 20px; font-size: 1.2em; }
+    #copyMessage {
+        display: none;
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 1.2em;
+	}
 </style>
 </head>
 <body>
@@ -39,6 +51,7 @@
     <div id="itemsContainer"></div>
     <button id="copyButton" onclick="copySummary()" disabled>複製總結</button>
     <p id="summary"></p>
+	<div id="copyMessage">總結已複製到剪貼板</div>
 </div>
 
 <script>
@@ -126,7 +139,13 @@ const generateSummary = () => {
 const copySummary = () => {
     if (document.getElementById('copyButton').disabled) return;
     const summary = document.getElementById('summary').innerText;
-    navigator.clipboard.writeText(summary).then(() => alert('總結已複製到剪貼板'));
+    navigator.clipboard.writeText(summary).then(() => {
+        const copyMessage = document.getElementById('copyMessage');
+        copyMessage.style.display = 'block';
+        setTimeout(() => {
+            copyMessage.style.display = 'none';
+        }, 2000); // Show the message for 2 seconds
+    });
 };
 
 document.addEventListener('DOMContentLoaded', () => {
