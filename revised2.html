@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>訂單生成器</title>
+<style>
+    body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0 10px; }
+    .container { max-width: 480px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    h1 { color: #333; text-align: center; margin-bottom: 20px; }
+    .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; justify-content: center; }
+    button { flex: 1; padding: 15px; border: none; border-radius: 5px; cursor: pointer; background: #e0e0e0; font-weight: bold; font-size: 1.2em; transition: background 0.3s; }
+    button:hover { background: #ccc; }
+    button.selected { background: #4CAF50; color: #fff; }
+    button.week { background: #2196F3; color: #fff; }
+    button.week.selected { background: #007BFF; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .controls { display: flex; align-items: center; }
+    .controls button { padding: 10px; margin: 0 5px; background: #4CAF50; color: #fff; border-radius: 3px; font-size: 1.2em; }
+    .controls input { width: 60px; text-align: center; border: 1px solid #ccc; border-radius: 3px; font-size: 1.2em; }
+    .clear-btn { background: #E53935; }
+    #copyButton { padding: 15px; border: none; width: 100%; }
+    #summary { text-align: center; margin-top: 20px; font-size: 1.2em; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>訂單生成器</h1>
+    <div class="button-group" id="companyButtons"></div>
+    <div class="button-group">
+        <button onclick="updateWeek(-1)">前一週</button>
+        <button id="currentWeekButton" onclick="resetToCurrentWeek()">本週</button>
+        <button onclick="updateWeek(1)">下一週</button>
+    </div>
+    <div class="button-group" id="weekButtons"></div>
+    <div id="itemsContainer"></div>
+    <button id="copyButton" onclick="copySummary()" disabled>複製總結</button>
+    <p id="summary"></p>
+</div>
+
+<script>
+const companies = ['公司一', '公司二', '公司三', '公司四', '公司五'];
+const companyItems = {
+    '公司一': ["米: 公斤", "水糖: 瓶", "蜜糖: 瓶"],
+    '公司二': ["豆漿: 瓶", "茶葉: 斤", "薑: 公斤", "蒜頭: 公斤"],
+    '公司三': ["胡蘿蔔: 公斤", "馬鈴薯: 公斤", "豬肉: 公斤", "牛肉: 公斤", "魚: 公斤"],
+    '公司四': ["飲用水: 瓶", "酸奶: 瓶", "麵包: 個", "奶酪: 公斤"],
+    '公司五': ["酒: 瓶", "水果: 斤", "蔬菜: 公斤", "米: 公斤"]
+};
+let selectedCompany = companies[0], selectedWeekDay = (new Date().getDay() + 6) % 7, weekOffset = 0;
+
+const render = (id, items, callback, selected, className = '') => {
+    document.getElementById(id).innerHTML = items.map((item, index) =>
+        `<button onclick="${callback}('${item}', ${index})" class="${className} ${selected === index ? 'selected' : ''}">${item}</button>`
+    ).join('');
+};
+
+const updateWeek = offset => { weekOffset += offset; selectedWeekDay = null; renderWeekButtons(); };
+
+const resetToCurrentWeek = () => { weekOffset = 0; selectedWeekDay = (new Date().getDay() + 6) % 7; renderWeekButtons(); };
+
+const getWeekDate = offset => {
+    let date = new Date();
+    const dayOfWeek = (date.getDay() + 6) % 7; // Adjust to make Monday = 0, Sunday = 6
+    date.setDate(date.getDate() - dayOfWeek + offset + weekOffset * 7);
+    return date.toLocaleDateString('zh-HK', { month: 'numeric', day: 'numeric' });
+};
+
+const renderWeekButtons = () => {
+    const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+    render('weekButtons', weekDays.map((d, i) => `星期${d} (${getWeekDate(i)})`), 'selectWeek', selectedWeekDay, 'week');
+};
+
+const selectCompany = company => { selectedCompany = company; renderItems(); render('companyButtons', companies, 'selectCompany', companies.indexOf(company)); updateCopyButtonState(); };
+
+const selectWeek = (_, index) => { selectedWeekDay = index; renderWeekButtons(); updateCopyButtonState(); generateSummary(); };
+
+const renderItems = () => {
+    const items = companyItems[selectedCompany];
+    document.getElementById('itemsContainer').innerHTML = items.map((item, i) =>
+        `<div class="item"><span>${item.split(':')[0]}:</span>
+        <div class="controls"><button onclick="updateQuantity(${i}, -1)">-</button>
+        <input type="text" id="item${i}" value="0" readonly><span>${item.split(':')[1]}</span>
+        <button onclick="updateQuantity(${i}, 1)">+</button>
+        <button class="clear-btn" onclick="updateQuantity(${i}, 0)">清除</button></div></div>`
+    ).join('');
+};
+
+const updateQuantity = (itemIndex, delta) => {
+    const input = document.getElementById(`item${itemIndex}`);
+    input.value = delta === 0 ? 0 : Math.max(0, parseInt(input.value) + delta);
+    updateCopyButtonState();
+    generateSummary();
+};
+
+const updateCopyButtonState = () => {
+    const hasItems = Array.from(document.querySelectorAll('#itemsContainer input')).some(input => parseInt(input.value) > 0);
+    const copyButton = document.getElementById('copyButton');
+    if (selectedCompany && selectedWeekDay !== null && hasItems) {
+        copyButton.disabled = false;
+        copyButton.style.backgroundColor = "#4CAF50";
+        copyButton.style.color = "white";
+    } else {
+        copyButton.disabled = true;
+        copyButton.style.backgroundColor = "#ccc";
+        copyButton.style.color = "#666";
+    }
+};
+
+const generateSummary = () => {
+    if (document.getElementById('copyButton').disabled) {
+        document.getElementById('summary').innerText = '';
+        return;
+    }
+    const selectedItems = companyItems[selectedCompany].map((item, i) => {
+        const qty = document.getElementById(`item${i}`).value;
+        return qty > 0 ? `${item.split(':')[0]}: ${qty}${item.split(':')[1]}` : '';
+    }).filter(Boolean);
+    const summary = `星期${["一", "二", "三", "四", "五", "六", "日"][selectedWeekDay]} (${getWeekDate(selectedWeekDay)}): ${selectedItems.join(', ')}`;
+    document.getElementById('summary').innerText = summary;
+};
+
+const copySummary = () => {
+    if (document.getElementById('copyButton').disabled) return;
+    const summary = document.getElementById('summary').innerText;
+    navigator.clipboard.writeText(summary).then(() => alert('總結已複製到剪貼板'));
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    render('companyButtons', companies, 'selectCompany', companies.indexOf(selectedCompany));
+    renderWeekButtons();
+    selectCompany(selectedCompany);
+    selectWeek('', selectedWeekDay);
+});
+</script>
+</body>
+</html>
