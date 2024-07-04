@@ -155,7 +155,7 @@ const generateSummary = () => {
         return qty > 0 ? `${item.split(':')[0]}: ${qty}${item.split(':')[1]}` : '';
     }).filter(Boolean);
     const summary = `星期${["一", "二", "三", "四", "五", "六", "日"][selectedWeekDay]} (${getWeekDate(selectedWeekDay)})
-	${selectedItems.join(', \n')}`;
+	${selectedItems.join('\n')}`;
     document.getElementById('summary').innerText = summary;
 };
 
